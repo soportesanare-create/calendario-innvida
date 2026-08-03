@@ -24,9 +24,17 @@
     document.documentElement.toggleAttribute('data-narvarte-readonly', active);
     if (!active) return;
 
+    if (!document.getElementById('narvarte-readonly-style')) {
+      const style = document.createElement('style');
+      style.id = 'narvarte-readonly-style';
+      style.textContent = 'html[data-narvarte-readonly] button[data-narvarte-create-appointment] { display: none !important; }';
+      document.head.appendChild(style);
+    }
+
     document.querySelectorAll('button').forEach((button) => {
-      if (button.textContent.trim().includes('Nueva Cita')) {
-        button.hidden = true;
+      const label = button.textContent.replace(/\s+/g, ' ').trim();
+      if (label.includes('Nueva Cita')) {
+        button.setAttribute('data-narvarte-create-appointment', 'true');
         button.setAttribute('aria-hidden', 'true');
       }
     });
