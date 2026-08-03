@@ -27,7 +27,11 @@
     if (!document.getElementById('narvarte-readonly-style')) {
       const style = document.createElement('style');
       style.id = 'narvarte-readonly-style';
-      style.textContent = 'html[data-narvarte-readonly] button[data-narvarte-create-appointment] { display: none !important; }';
+      style.textContent = [
+        'html[data-narvarte-readonly] button[data-narvarte-create-appointment],',
+        'html[data-narvarte-readonly] button[data-narvarte-save-appointment] { display: none !important; }',
+        'html[data-narvarte-readonly] .modal-content .color-option { pointer-events: none; opacity: .7; }'
+      ].join('\n');
       document.head.appendChild(style);
     }
 
@@ -37,11 +41,25 @@
         button.setAttribute('data-narvarte-create-appointment', 'true');
         button.setAttribute('aria-hidden', 'true');
       }
+      if (label.includes('Guardar Registro')) {
+        button.setAttribute('data-narvarte-save-appointment', 'true');
+        button.setAttribute('aria-hidden', 'true');
+      }
     });
 
     document.querySelectorAll('.calendar-cell, .appointment').forEach((element) => {
       element.style.cursor = 'default';
       element.setAttribute('aria-disabled', 'true');
+    });
+
+    document.querySelectorAll('.modal-content input, .modal-content textarea').forEach((field) => {
+      field.readOnly = true;
+      field.setAttribute('aria-readonly', 'true');
+    });
+
+    document.querySelectorAll('.modal-content select').forEach((field) => {
+      field.disabled = true;
+      field.setAttribute('aria-disabled', 'true');
     });
 
     if (!document.getElementById('narvarte-readonly-notice')) {
@@ -58,7 +76,9 @@
 
     const target = event.target instanceof Element ? event.target : null;
     if (!target) return;
-    if (target.closest('.calendar-cell, .appointment')) denyChange(event);
+    // Una cita sí puede abrirse para consulta. React detiene su propagación
+    // antes de que el clic llegue a la celda del calendario.
+    if (!target.closest('.appointment') && target.closest('.calendar-cell')) denyChange(event);
 
     const button = target.closest('button');
     if (button && /Nueva Cita|Guardar Registro/i.test(button.textContent)) denyChange(event);
@@ -69,6 +89,7 @@
     const username = form?.querySelector('input[type="text"]')?.value.trim().toLowerCase();
     const password = form?.querySelector('input[type="password"]')?.value;
 
+    // Este perfil se integra sin alterar el resto de usuarios existentes.
     if (username === 'narvarte_consulta' && password === 'narvarteC2026') {
       event.preventDefault();
       event.stopImmediatePropagation();
