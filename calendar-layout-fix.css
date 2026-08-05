@@ -1,0 +1,15 @@
+/* Mantiene las siete columnas del mes del mismo ancho, aun cuando una cita
+   tenga un nombre largo. Cada semana es una cuadrícula independiente. */
+.calendar-grid {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.calendar-cell,
+.appointments-list,
+.appointment {
+  min-width: 0;
+}
+
+.appointment {
+  max-width: 100%;
+}
