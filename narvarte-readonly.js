@@ -1,36 +1,47 @@
-/* Perfil de consulta: la sede Narvarte puede ver su agenda sin modificarla. */
+/* Perfiles de consulta: cada sede puede ver su agenda sin modificarla. */
 (function () {
   'use strict';
 
   const SESSION_KEY = 'sanare-session';
+  const READ_ONLY_USERS = {
+    narvarte_consulta: { password: 'narvarteC2026', branch: 'narvarte', label: 'Narvarte' },
+    tijuana_consulta: { password: 'tijuanaC2026', branch: 'tijuana', label: 'Tijuana' },
+    toluca_consulta: { password: 'tolucaC2026', branch: 'toluca', label: 'Toluca' },
+    morelia_consulta: { password: 'moreliaC2026', branch: 'morelia', label: 'Morelia' }
+  };
 
-  function isNarvarteReadOnly() {
+  function getReadOnlySession() {
     try {
       const session = JSON.parse(localStorage.getItem(SESSION_KEY) || 'null');
-      return session && session.username === 'narvarte_consulta' && session.readOnly === true;
+      return session && READ_ONLY_USERS[session.username] && session.readOnly === true
+        ? session
+        : null;
     } catch (_) {
-      return false;
+      return null;
     }
   }
 
   function denyChange(event) {
     event.preventDefault();
     event.stopImmediatePropagation();
-    window.alert('La sede Narvarte tiene acceso de solo lectura y no puede modificar la agenda.');
+    const session = getReadOnlySession();
+    const label = READ_ONLY_USERS[session?.username]?.label || 'Esta sede';
+    window.alert(`La sede ${label} tiene acceso de solo lectura y no puede modificar la agenda.`);
   }
 
   function applyReadOnlyView() {
-    const active = isNarvarteReadOnly();
-    document.documentElement.toggleAttribute('data-narvarte-readonly', active);
+    const session = getReadOnlySession();
+    const active = Boolean(session);
+    document.documentElement.toggleAttribute('data-branch-readonly', active);
     if (!active) return;
 
-    if (!document.getElementById('narvarte-readonly-style')) {
+    if (!document.getElementById('branch-readonly-style')) {
       const style = document.createElement('style');
-      style.id = 'narvarte-readonly-style';
+      style.id = 'branch-readonly-style';
       style.textContent = [
-        'html[data-narvarte-readonly] button[data-narvarte-create-appointment],',
-        'html[data-narvarte-readonly] button[data-narvarte-save-appointment] { display: none !important; }',
-        'html[data-narvarte-readonly] .modal-content .color-option { pointer-events: none; opacity: .7; }'
+        'html[data-branch-readonly] button[data-readonly-create-appointment],',
+        'html[data-branch-readonly] button[data-readonly-save-appointment] { display: none !important; }',
+        'html[data-branch-readonly] .modal-content .color-option { pointer-events: none; opacity: .7; }'
       ].join('\n');
       document.head.appendChild(style);
     }
@@ -38,11 +49,11 @@
     document.querySelectorAll('button').forEach((button) => {
       const label = button.textContent.replace(/\s+/g, ' ').trim();
       if (label.includes('Nueva Cita')) {
-        button.setAttribute('data-narvarte-create-appointment', 'true');
+        button.setAttribute('data-readonly-create-appointment', 'true');
         button.setAttribute('aria-hidden', 'true');
       }
       if (label.includes('Guardar Registro')) {
-        button.setAttribute('data-narvarte-save-appointment', 'true');
+        button.setAttribute('data-readonly-save-appointment', 'true');
         button.setAttribute('aria-hidden', 'true');
       }
     });
@@ -62,17 +73,17 @@
       field.setAttribute('aria-disabled', 'true');
     });
 
-    if (!document.getElementById('narvarte-readonly-notice')) {
+    if (!document.getElementById('branch-readonly-notice')) {
       const notice = document.createElement('p');
-      notice.id = 'narvarte-readonly-notice';
-      notice.textContent = 'Sede Narvarte · Consulta de agenda (solo lectura)';
+      notice.id = 'branch-readonly-notice';
+      notice.textContent = `Sede ${READ_ONLY_USERS[session.username].label} · Consulta de agenda (solo lectura)`;
       notice.style.cssText = 'margin:8px 0 0;text-align:center;color:var(--text-muted);font-size:.82rem;font-weight:600';
       document.querySelector('header .logo-img')?.parentElement?.appendChild(notice);
     }
   }
 
   document.addEventListener('click', (event) => {
-    if (!isNarvarteReadOnly()) return;
+    if (!getReadOnlySession()) return;
 
     const target = event.target instanceof Element ? event.target : null;
     if (!target) return;
@@ -89,21 +100,22 @@
     const username = form?.querySelector('input[type="text"]')?.value.trim().toLowerCase();
     const password = form?.querySelector('input[type="password"]')?.value;
 
-    // Este perfil se integra sin alterar el resto de usuarios existentes.
-    if (username === 'narvarte_consulta' && password === 'narvarteC2026') {
+    const profile = READ_ONLY_USERS[username];
+    // Estos perfiles se integran sin alterar el resto de usuarios existentes.
+    if (profile && password === profile.password) {
       event.preventDefault();
       event.stopImmediatePropagation();
       localStorage.setItem(SESSION_KEY, JSON.stringify({
-        username: 'narvarte_consulta',
+        username,
         role: 'branch',
-        branch: 'narvarte',
+        branch: profile.branch,
         readOnly: true
       }));
       window.location.reload();
       return;
     }
 
-    if (isNarvarteReadOnly()) denyChange(event);
+    if (getReadOnlySession()) denyChange(event);
   }, true);
 
   new MutationObserver(applyReadOnlyView).observe(document.documentElement, {
