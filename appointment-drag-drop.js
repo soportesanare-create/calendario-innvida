@@ -59,17 +59,63 @@
     };
   }
 
+  function normalizeText(value) {
+    return String(value || '')
+      .trim()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
+  }
+
+  function normalizeTime(value) {
+    return String(value || '')
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/a\.?m\.?|p\.?m\.?/g, '');
+  }
+
+  // Firestore lista un número limitado de documentos por respuesta. Leemos todas
+  // las páginas para no fallar cuando la cita está fuera del primer bloque.
+  async function listAppointments(branch) {
+    const baseUrl = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/sedes/${encodeURIComponent(branch)}/appointments?key=${API_KEY}&pageSize=300`;
+    const documents = [];
+    let pageToken = '';
+
+    do {
+      const url = pageToken ? `${baseUrl}&pageToken=${encodeURIComponent(pageToken)}` : baseUrl;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('No se pudo consultar la cita.');
+      const payload = await response.json();
+      documents.push(...(payload.documents || []));
+      pageToken = payload.nextPageToken || '';
+    } while (pageToken);
+
+    return documents;
+  }
+
   async function findAppointment(details) {
-    const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/sedes/${encodeURIComponent(details.branch)}/appointments?key=${API_KEY}`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('No se pudo consultar la cita.');
-    const payload = await response.json();
-    const document = (payload.documents || []).find((item) => {
-      const fields = item.fields || {};
-      return fields.patientName?.stringValue === details.patientName && fields.time?.stringValue === details.time && sameDay(fields.date?.stringValue, details.sourceDate) && (fields.notes?.stringValue || '') === details.notes;
+    const sameDayDocuments = (await listAppointments(details.branch)).filter((item) => {
+      return sameDay(item.fields?.date?.stringValue, details.sourceDate);
     });
-    if (!document) throw new Error('No se encontró una coincidencia única para la cita.');
-    return document;
+
+    const samePatientAndTime = sameDayDocuments.filter((item) => {
+      const fields = item.fields || {};
+      return normalizeText(fields.patientName?.stringValue) === normalizeText(details.patientName) &&
+        normalizeTime(fields.time?.stringValue) === normalizeTime(details.time);
+    });
+    if (samePatientAndTime.length === 1) return samePatientAndTime[0];
+
+    // Si hay dos citas del mismo paciente a la misma hora, las anotaciones
+    // permiten distinguirlas. No se exige esta comparación para el caso común,
+    // porque la justificación puede haber sido modificada durante la edición.
+    const sameNotes = samePatientAndTime.filter((item) => {
+      return normalizeText(item.fields?.notes?.stringValue) === normalizeText(details.notes);
+    });
+    if (sameNotes.length === 1) return sameNotes[0];
+
+    throw new Error('No se encontró una coincidencia única para la cita. Actualiza la página e inténtalo de nuevo.');
   }
 
   async function moveAppointment(details, targetDate, reason) {
