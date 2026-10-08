@@ -7,7 +7,8 @@
     narvarte_consulta: { password: 'narvarteC2026', branch: 'narvarte', label: 'Narvarte' },
     tijuana_consulta: { password: 'tijuanaC2026', branch: 'tijuana', label: 'Tijuana' },
     toluca_consulta: { password: 'tolucaC2026', branch: 'toluca', label: 'Toluca' },
-    morelia_consulta: { password: 'moreliaC2026', branch: 'morelia', label: 'Morelia' }
+    morelia_consulta: { password: 'moreliaC2026', branch: 'morelia', label: 'Morelia' },
+    santafe_consulta: { password: 'santafeC2026', branch: 'santafe', label: 'Santa Fe' }
   };
 
   function getReadOnlySession() {
