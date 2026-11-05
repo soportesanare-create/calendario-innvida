@@ -69,6 +69,11 @@
       field.setAttribute('aria-readonly', 'true');
     });
 
+    document.querySelectorAll('.payment-paid-toggle').forEach((button) => {
+      button.disabled = true;
+      button.setAttribute('aria-disabled', 'true');
+    });
+
     document.querySelectorAll('.modal-content select').forEach((field) => {
       field.disabled = true;
       field.setAttribute('aria-disabled', 'true');

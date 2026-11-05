@@ -1,0 +1,46 @@
+.payment-status-group {
+  margin-top: -4px;
+}
+
+.payment-paid-toggle {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #a48427;
+  border-radius: 10px;
+  background: transparent;
+  color: #d9c88c;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.payment-paid-toggle:hover:not(:disabled),
+.payment-paid-toggle:focus-visible {
+  border-color: #d1ad36;
+  outline: 2px solid #d1ad36;
+  outline-offset: 2px;
+}
+
+.payment-paid-toggle.is-paid {
+  border-color: #42a57c;
+  background: rgba(48, 143, 101, .18);
+  color: #81e0af;
+}
+
+.payment-paid-toggle:disabled {
+  opacity: .7;
+  cursor: default;
+}
+
+.appointment-paid-badge {
+  display: inline-block;
+  margin-left: 5px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(21, 87, 57, .85);
+  color: #fff;
+  font-size: .65rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
